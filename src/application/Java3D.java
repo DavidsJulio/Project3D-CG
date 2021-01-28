@@ -28,6 +28,7 @@ import javax.vecmath.Vector3d;
 import javax.vecmath.Vector3f;
 
 import com.sun.j3d.utils.behaviors.vp.OrbitBehavior;
+import com.sun.j3d.utils.geometry.Box;
 import com.sun.j3d.utils.universe.SimpleUniverse;
 
 import appearence.MyMaterial;
@@ -70,7 +71,6 @@ public class Java3D extends Frame{
 		setLayout(new BorderLayout());
 		add(cv, BorderLayout.CENTER);
 		
-		      
 
 		// Create the a simple universe with a standard nominal view
 		SimpleUniverse su = new SimpleUniverse(cv);
@@ -79,7 +79,7 @@ public class Java3D extends Frame{
 		
 		//Vista
 		Transform3D viewTr = new Transform3D();
-		viewTr.lookAt(new Point3d(0.0,  1.5,  3.5), new Point3d(0, 0, 0), new Vector3d(0,1,0));
+		viewTr.lookAt(new Point3d(0.0,  1.5,  3.5), new Point3d(0, 0, 0), new Vector3d(0,2,0));
 		viewTr.invert();
 		su.getViewingPlatform().getViewPlatformTransform().setTransform(viewTr);;
 		
@@ -87,11 +87,7 @@ public class Java3D extends Frame{
 		BranchGroup bg = createSceneGraph();
 		bg.compile();
 		su.addBranchGraph(bg); // Add the content branch to the simple universe
-		
-//		BranchGroup bg = createSceneGraph();
-//		bg.compile();
-//		su.addBranchGraph(bg); // Add the content branch to the simple universe
-
+	
 
 		//Camara
 		// Add a OrbitBehavior to control the first view with the mouse
@@ -106,6 +102,11 @@ public class Java3D extends Frame{
 		// Axes
 		root.addChild(new Axes(new Color3f(Color.RED), 3, 14f));
 		
+		//Carpet
+		TextureAppearence carpet = new TextureAppearence("images/carpet.jpg", false, this);
+		Box floor = new Box(3.5f, 0.01f, 3.5f, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS, carpet);
+		floor.setCollidable(false);
+		root.addChild(floor);
 		
 		
 		//Appearence ToyTruck
@@ -120,7 +121,7 @@ public class Java3D extends Frame{
 		//Truck
 		ToyTruck truck = new ToyTruck(backTruckApp, frontTruckApp, wheels);
 		Transform3D tr = new Transform3D();
-		tr.setTranslation(new Vector3f(0f, 0.3f, 0.7f));
+		tr.setTranslation(new Vector3f(0f, 0.31f, 0.7f));
 		TransformGroup tg = new TransformGroup(tr);
 		
 		TransformGroup moveTg = new TransformGroup();
@@ -130,6 +131,7 @@ public class Java3D extends Frame{
 		tg.addChild(moveTg);
 		root.addChild(tg);
 
+		
 		
 		
 		// Lights
