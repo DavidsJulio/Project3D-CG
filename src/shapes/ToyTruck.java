@@ -21,8 +21,8 @@ public class ToyTruck extends Group{
 	private float frontTruckY = 0.12f;
 	private float frontTruckZ = 0.1f;
 	
-	public float wheelSize = 0.1f;
-	private float wheelWidth = 0.1f;
+	private float wheelRadius = 0.1f;
+	private float wheelHeight = 0.1f;
 	
 	public ToyTruck(Appearance appTruck, Appearance frontApp, Appearance wheels) {
 	
@@ -45,7 +45,7 @@ public class ToyTruck extends Group{
 		//Wheels
 		
 		//RightFront
-		Cylinder wheelRF = new Cylinder(wheelSize, wheelWidth, wheels);
+		Cylinder wheelRF = new Cylinder(wheelRadius, wheelHeight, wheels);
 		Transform3D trWheelRF = new Transform3D();
 		trWheelRF.set(new Vector3f(0.25f, -0.2f, 0.175f));
 
@@ -59,7 +59,7 @@ public class ToyTruck extends Group{
 		this.addChild(tgWheelRF);
 		
 		//RightBack
-		Cylinder wheelRB = new Cylinder(wheelSize, wheelWidth, wheels);
+		Cylinder wheelRB = new Cylinder(wheelRadius, wheelHeight, wheels);
 		Transform3D trWheelRB = new Transform3D();
 		trWheelRB.set(new Vector3f(-0.25f, -0.2f, 0.175f));
 		
@@ -70,7 +70,7 @@ public class ToyTruck extends Group{
 		this.addChild(tgWheelRB);
 		
 		//LeftBack
-		Cylinder wheelLB = new Cylinder(wheelSize, wheelWidth, wheels);
+		Cylinder wheelLB = new Cylinder(wheelRadius, wheelHeight, wheels);
 		Transform3D trWheelLB = new Transform3D();
 		trWheelLB.set(new Vector3f(-0.25f, -0.2f, -0.175f));
 		
@@ -81,7 +81,7 @@ public class ToyTruck extends Group{
 		this.addChild(tgWheelLB);
 		
 		//LeftFront
-		Cylinder wheelLF = new Cylinder(wheelSize, wheelWidth, wheels);
+		Cylinder wheelLF = new Cylinder(wheelRadius, wheelHeight, wheels);
 		Transform3D trWheelLF = new Transform3D();
 		trWheelLF.set(new Vector3f(0.25f, -0.2f, -0.175f));
 

@@ -3,6 +3,7 @@ package application;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Frame;
 import java.awt.GraphicsConfiguration;
 import java.awt.event.WindowEvent;
@@ -17,8 +18,12 @@ import javax.media.j3d.Background;
 import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Canvas3D;
+import javax.media.j3d.Font3D;
+import javax.media.j3d.FontExtrusion;
 import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.PointLight;
+import javax.media.j3d.Shape3D;
+import javax.media.j3d.Text3D;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.vecmath.Color3f;
@@ -103,7 +108,7 @@ public class Java3D extends Frame{
 		root.addChild(new Axes(new Color3f(Color.RED), 3, 14f));
 		
 		//Carpet
-		TextureAppearence carpet = new TextureAppearence("images/carpet.jpg", false, this);
+		TextureAppearence carpet = new TextureAppearence("images/wood.jpg", false, this);
 		Box floor = new Box(3.5f, 0.01f, 3.5f, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS, carpet);
 		floor.setCollidable(false);
 		root.addChild(floor);
@@ -112,15 +117,16 @@ public class Java3D extends Frame{
 		//Appearence ToyTruck
 		Appearance frontTruckApp = new Appearance();
 		frontTruckApp.setMaterial(new MyMaterial(MyMaterial.CHROME));
+		
+		TextureAppearence backTruckApp = new TextureAppearence("images/woodType1.jpg", false, this);
 
 		Appearance wheels = new Appearance();
 		wheels.setMaterial(new MyMaterial(MyMaterial.BRASS));
-
-		TextureAppearence backTruckApp = new TextureAppearence("images/woodType1.jpg", false, this);
 		
 		//Truck
 		ToyTruck truck = new ToyTruck(backTruckApp, frontTruckApp, wheels);
 		Transform3D tr = new Transform3D();
+		//tr.setScale(0.25); - USAR PARA TRANSFORMAÇÔES GEOMETRICAS
 		tr.setTranslation(new Vector3f(0f, 0.31f, 0.7f));
 		TransformGroup tg = new TransformGroup(tr);
 		
@@ -131,8 +137,12 @@ public class Java3D extends Frame{
 		tg.addChild(moveTg);
 		root.addChild(tg);
 
+		//Font - para ser mais genérico mudar o tr/tg
+		Appearance textApp = new Appearance();
+		textApp.setMaterial(new MyMaterial(MyMaterial.GOLD));
+		createFont(root, "Bem vindo", textApp);
 		
-		
+
 		
 		// Lights
 		AmbientLight ablight = new AmbientLight(true, new Color3f(Color.WHITE));
@@ -149,11 +159,31 @@ public class Java3D extends Frame{
 		return root;
 	}
 	
+	private void createFont(BranchGroup root, String msg, Appearance app) {
+		Font font = new Font("SansSerif", Font.BOLD, 1);
+		FontExtrusion extrusion = new FontExtrusion();
+		Font3D font3d = new Font3D(font, extrusion);
+		
+		Text3D text = new Text3D(font3d, msg);
+		
+		
+		Shape3D shapeText = new Shape3D(text, app);
+		
+		
+		Transform3D trFont = new Transform3D();
+		trFont.setScale(0.3f);
+		trFont.setTranslation(new Vector3d(-1f, 1f, 0f));
+		TransformGroup tgFont = new TransformGroup(trFont);
+		
+		tgFont.addChild(shapeText);
+		root.addChild(tgFont);
+	}
 	
 	private void setBackground(BranchGroup root) {
 		//background
-	    background = new Background(1.0f, 1.0f, 1.0f);
+	    background = new Background();
 	    background.setApplicationBounds(bounds);
+	    
 	    //load image
 	    URL url = getClass().getClassLoader().getResource("images/sky.jpg");
 	    BufferedImage bi = null;
@@ -168,6 +198,11 @@ public class Java3D extends Frame{
 	    root.addChild(background);	
 	}
 
-
+	
+	
+//	Appearance wheels = new Appearance();
+//	Color3f col = new Color3f(0.3f, 0.0f, 0.0f); 
+//	ColoringAttributes ca = new ColoringAttributes(col, ColoringAttributes.NICEST);
+//	wheels.setColoringAttributes(ca);	
 	
 }
