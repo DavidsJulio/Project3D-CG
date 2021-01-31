@@ -6,6 +6,8 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.GraphicsConfiguration;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -34,6 +36,9 @@ import javax.vecmath.Vector3f;
 
 import com.sun.j3d.utils.behaviors.vp.OrbitBehavior;
 import com.sun.j3d.utils.geometry.Box;
+import com.sun.j3d.utils.picking.PickCanvas;
+import com.sun.j3d.utils.picking.PickResult;
+import com.sun.j3d.utils.picking.PickTool;
 import com.sun.j3d.utils.universe.SimpleUniverse;
 
 import appearence.MyMaterial;
@@ -41,11 +46,12 @@ import appearence.TextureAppearence;
 import shapes.ToyTruck;
 import util.Axes;
 
-public class Java3D extends Frame{
+public class Java3D extends Frame implements MouseListener{
 	
 	BoundingSphere bounds = new BoundingSphere(); // Bounds of the scene
 	Background background = null;
 	ImageComponent2D image = null;
+	PickCanvas pickCanvas;
 	
 	public static void main(String[] args) {
 		
@@ -68,34 +74,32 @@ public class Java3D extends Frame{
 	
 	public Java3D() {
 		
-		// Create first canvas for the first view
 		GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
 		Canvas3D cv = new Canvas3D(gc);
 
 		// Add canvas to the frame
 		setLayout(new BorderLayout());
 		add(cv, BorderLayout.CENTER);
+		cv.addMouseListener(this);
 		
-
-		// Create the a simple universe with a standard nominal view
 		SimpleUniverse su = new SimpleUniverse(cv);
-		//su.getViewingPlatform().setNominalViewingTransform();
 		
 		
 		//Vista
 		Transform3D viewTr = new Transform3D();
 		viewTr.lookAt(new Point3d(0.0,  1.5,  3.5), new Point3d(0, 0, 0), new Vector3d(0,2,0));
 		viewTr.invert();
-		su.getViewingPlatform().getViewPlatformTransform().setTransform(viewTr);;
-		
+		su.getViewingPlatform().getViewPlatformTransform().setTransform(viewTr);;	
 		
 		BranchGroup bg = createSceneGraph();
 		bg.compile();
-		su.addBranchGraph(bg); // Add the content branch to the simple universe
-	
+		su.addBranchGraph(bg);
 
+		//PICKING
+		pickCanvas = new PickCanvas(cv, bg);
+		pickCanvas.setMode(PickTool.GEOMETRY);
+		
 		//Camara
-		// Add a OrbitBehavior to control the first view with the mouse
 		OrbitBehavior orbit = new OrbitBehavior(cv);
 		orbit.setSchedulingBounds(bounds);
 		su.getViewingPlatform().setViewPlatformBehavior(orbit);
@@ -104,47 +108,43 @@ public class Java3D extends Frame{
 	private BranchGroup createSceneGraph() {
 		BranchGroup root = new BranchGroup();
 		
-		// Axes
+		//AXES
 		root.addChild(new Axes(new Color3f(Color.RED), 3, 14f));
 		
-		//Carpet
+		//FLOOR
 		TextureAppearence carpet = new TextureAppearence("images/wood.jpg", false, this);
 		Box floor = new Box(3.5f, 0.01f, 3.5f, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS, carpet);
 		floor.setCollidable(false);
 		root.addChild(floor);
 		
 		
+		//TRUCK
 		//Appearence ToyTruck
 		Appearance frontTruckApp = new Appearance();
 		frontTruckApp.setMaterial(new MyMaterial(MyMaterial.CHROME));
-		
 		TextureAppearence backTruckApp = new TextureAppearence("images/woodType1.jpg", false, this);
-
 		Appearance wheels = new Appearance();
 		wheels.setMaterial(new MyMaterial(MyMaterial.BRASS));
 		
-		//Truck
 		ToyTruck truck = new ToyTruck(backTruckApp, frontTruckApp, wheels);
+		
 		Transform3D tr = new Transform3D();
-		//tr.setScale(0.25); - USAR PARA TRANSFORMAÇÔES GEOMETRICAS
 		tr.setTranslation(new Vector3f(0f, 0.31f, 0.7f));
 		TransformGroup tg = new TransformGroup(tr);
 		
-		TransformGroup moveTg = new TransformGroup();
-		moveTg.setCapability(TransformGroup.ALLOW_TRANSFORM_READ); 
-		moveTg.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);		
-		moveTg.addChild(truck);
-		tg.addChild(moveTg);
+		tg.setCapability(TransformGroup.ENABLE_PICK_REPORTING);
+		tg.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		tg.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		tg.addChild(truck);
 		root.addChild(tg);
 
-		//Font - para ser mais genérico mudar o tr/tg
+		//FONT
 		Appearance textApp = new Appearance();
 		textApp.setMaterial(new MyMaterial(MyMaterial.GOLD));
-		createFont(root, "Bem vindo", textApp);
+		createFont(root, "Bem vindo", textApp, tg, tr);
 		
-
 		
-		// Lights
+		// LIGHT
 		AmbientLight ablight = new AmbientLight(true, new Color3f(Color.WHITE));
 		ablight.setInfluencingBounds(bounds);
 		root.addChild(ablight);
@@ -153,13 +153,13 @@ public class Java3D extends Frame{
 		ptlight.setInfluencingBounds(bounds);
 		root.addChild(ptlight);
 
-		//Background
+		//BACKGROUND
 		setBackground(root);
 
 		return root;
 	}
 	
-	private void createFont(BranchGroup root, String msg, Appearance app) {
+	private void createFont(BranchGroup root, String msg, Appearance app, TransformGroup tgFont, Transform3D trFont) {
 		Font font = new Font("SansSerif", Font.BOLD, 1);
 		FontExtrusion extrusion = new FontExtrusion();
 		Font3D font3d = new Font3D(font, extrusion);
@@ -170,10 +170,10 @@ public class Java3D extends Frame{
 		Shape3D shapeText = new Shape3D(text, app);
 		
 		
-		Transform3D trFont = new Transform3D();
+		trFont = new Transform3D();
 		trFont.setScale(0.3f);
 		trFont.setTranslation(new Vector3d(-1f, 1f, 0f));
-		TransformGroup tgFont = new TransformGroup(trFont);
+		tgFont = new TransformGroup(trFont);
 		
 		tgFont.addChild(shapeText);
 		root.addChild(tgFont);
@@ -198,11 +198,47 @@ public class Java3D extends Frame{
 	    root.addChild(background);	
 	}
 
-	
-	
-//	Appearance wheels = new Appearance();
-//	Color3f col = new Color3f(0.3f, 0.0f, 0.0f); 
-//	ColoringAttributes ca = new ColoringAttributes(col, ColoringAttributes.NICEST);
-//	wheels.setColoringAttributes(ca);	
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		pickCanvas.setShapeLocation(e);
+		PickResult result = pickCanvas.pickClosest(); 
+
+		TransformGroup nodeTG = (TransformGroup) result.getNode(PickResult.TRANSFORM_GROUP);
+		if (nodeTG != null) {
+			
+			System.out.println("Teste - Selecionado");		
+
+		}
+	}
+
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
 	
 }
