@@ -1,16 +1,15 @@
 package shapes;
 
 import javax.media.j3d.Appearance;
-import javax.media.j3d.Group;
+import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
-import javax.vecmath.Vector3d;
 import javax.vecmath.Vector3f;
 
 import com.sun.j3d.utils.geometry.Box;
 import com.sun.j3d.utils.geometry.Cylinder;
 
-public class ToyTruck extends Group{
+public class ToyTruck extends BranchGroup{
 	
 	//Size
 	private float backTruckX= 0.35f;

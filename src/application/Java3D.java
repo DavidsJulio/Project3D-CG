@@ -48,10 +48,11 @@ import util.Axes;
 
 public class Java3D extends Frame implements MouseListener{
 	
-	BoundingSphere bounds = new BoundingSphere(); // Bounds of the scene
+	BoundingSphere bounds = new BoundingSphere(new Point3d(0, 0, 0), 2.0f); // Bounds of the scene
 	Background background = null;
 	ImageComponent2D image = null;
 	PickCanvas pickCanvas;
+	boolean enable = false;
 	
 	public static void main(String[] args) {
 		
@@ -84,7 +85,6 @@ public class Java3D extends Frame implements MouseListener{
 		
 		SimpleUniverse su = new SimpleUniverse(cv);
 		
-		
 		//Vista
 		Transform3D viewTr = new Transform3D();
 		viewTr.lookAt(new Point3d(0.0,  1.5,  3.5), new Point3d(0, 0, 0), new Vector3d(0,2,0));
@@ -109,12 +109,11 @@ public class Java3D extends Frame implements MouseListener{
 		BranchGroup root = new BranchGroup();
 		
 		//AXES
-		root.addChild(new Axes(new Color3f(Color.RED), 3, 14f));
+//		root.addChild(new Axes(new Color3f(Color.RED), 3, 14f));
 		
 		//FLOOR
 		TextureAppearence carpet = new TextureAppearence("images/wood.jpg", false, this);
 		Box floor = new Box(3.5f, 0.01f, 3.5f, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS, carpet);
-		floor.setCollidable(false);
 		root.addChild(floor);
 		
 		
@@ -129,14 +128,24 @@ public class Java3D extends Frame implements MouseListener{
 		ToyTruck truck = new ToyTruck(backTruckApp, frontTruckApp, wheels);
 		
 		Transform3D tr = new Transform3D();
-		tr.setTranslation(new Vector3f(0f, 0.31f, 0.7f));
+		tr.setTranslation(new Vector3f(0f, 0.33f, 0.7f));
 		TransformGroup tg = new TransformGroup(tr);
 		
+		TransformGroup moveTG = new TransformGroup();
+		moveTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		moveTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		moveTG.addChild(truck);
+	
 		tg.setCapability(TransformGroup.ENABLE_PICK_REPORTING);
-		tg.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		tg.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		tg.addChild(truck);
+		tg.addChild(moveTG);
 		root.addChild(tg);
+		
+	
+		//KeyControl
+		KeyControl control = new KeyControl(moveTG, truck);
+		control.setSchedulingBounds(bounds);
+		root.addChild(control);
+	
 
 		//FONT
 		Appearance textApp = new Appearance();
@@ -205,10 +214,8 @@ public class Java3D extends Frame implements MouseListener{
 		PickResult result = pickCanvas.pickClosest(); 
 
 		TransformGroup nodeTG = (TransformGroup) result.getNode(PickResult.TRANSFORM_GROUP);
-		if (nodeTG != null) {
-			
-			System.out.println("Teste - Selecionado");		
-
+		if (nodeTG != null) {	
+			System.out.println("Teste seleção: " + enable);
 		}
 	}
 
