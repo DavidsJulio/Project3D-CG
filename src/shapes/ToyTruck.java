@@ -1,7 +1,7 @@
 package shapes;
 
 import javax.media.j3d.Appearance;
-import javax.media.j3d.BranchGroup;
+import javax.media.j3d.Group;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.vecmath.Vector3f;
@@ -9,7 +9,7 @@ import javax.vecmath.Vector3f;
 import com.sun.j3d.utils.geometry.Box;
 import com.sun.j3d.utils.geometry.Cylinder;
 
-public class ToyTruck extends BranchGroup{
+public class ToyTruck extends Group{
 	
 	//Size
 	private float backTruckX= 0.35f;
@@ -23,17 +23,19 @@ public class ToyTruck extends BranchGroup{
 	private float wheelRadius = 0.1f;
 	private float wheelHeight = 0.1f;
 	
+
 	public ToyTruck(Appearance appTruck, Appearance frontApp, Appearance wheels) {
-	
+
 		
 		Box backTruck = new Box(backTruckX, backTruckY, backTruckZ, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS, appTruck); //eixoX, eixoY, exioZ
+		backTruck.setName("ToyTruck");
 		Transform3D trBackTruck = new Transform3D();
 		trBackTruck.set(new Vector3f(0f, 0f, 0f));
 		TransformGroup tgBackTruck = new TransformGroup(trBackTruck);
 		tgBackTruck.addChild(backTruck);
 		this.addChild(tgBackTruck);
 		
-		Box frontTruck = new Box(frontTruckX, frontTruckY, frontTruckZ, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS, frontApp);
+		Box frontTruck = new Box(frontTruckX, frontTruckY, frontTruckZ, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS , frontApp);
 		Transform3D trFrontTruck = new Transform3D();
 		trFrontTruck.set(new Vector3f(0.45f, -0.08f, 0f));
 		TransformGroup tgFrontTruck = new TransformGroup(trFrontTruck);
@@ -52,8 +54,10 @@ public class ToyTruck extends BranchGroup{
 		Transform3D rot = new Transform3D();
 		rot.rotX(Math.PI/2);
 		trWheelRF.mul(rot);	
+
 		
 		TransformGroup tgWheelRF = new TransformGroup(trWheelRF);
+		tgWheelRF = new TransformGroup(trWheelRF);
 		tgWheelRF.addChild(wheelRF);
 		this.addChild(tgWheelRF);
 		
@@ -89,8 +93,7 @@ public class ToyTruck extends BranchGroup{
 		TransformGroup tgWheelLF = new TransformGroup(trWheelLF);
 		tgWheelLF.addChild(wheelLF);
 		this.addChild(tgWheelLF);
-		
-		
+	
 	}
 
 }

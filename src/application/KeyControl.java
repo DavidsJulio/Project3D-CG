@@ -2,10 +2,16 @@ package application;
 
 import java.awt.AWTEvent;
 import java.awt.event.KeyEvent;
+import java.net.URL;
 import java.util.Enumeration;
 
+import javax.media.j3d.BackgroundSound;
 import javax.media.j3d.Behavior;
+import javax.media.j3d.BoundingSphere;
+import javax.media.j3d.BranchGroup;
+import javax.media.j3d.MediaContainer;
 import javax.media.j3d.Node;
+import javax.media.j3d.Sound;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.media.j3d.WakeupCondition;
@@ -15,6 +21,8 @@ import javax.media.j3d.WakeupOnCollisionEntry;
 import javax.media.j3d.WakeupOnCollisionExit;
 import javax.media.j3d.WakeupOr;
 import javax.vecmath.Vector3f;
+
+import shapes.ToyTruck;
 
 
 public class KeyControl extends Behavior {
@@ -27,10 +35,18 @@ public class KeyControl extends Behavior {
 	
 	private boolean collision = false;
 	private int lastKey;
+	private boolean enable;
+	private BackgroundSound sound;
+	private boolean onOff = false;
 	
-	public KeyControl(TransformGroup moveTg, Node node) {
+	public KeyControl(TransformGroup moveTg, Node node, boolean enable, BackgroundSound sound) {
 		this.moveTg = moveTg;
 		this.node = node;
+		this.enable = enable;
+		this.sound = sound;
+		sound.setCapability(Sound.ALLOW_ENABLE_WRITE);
+		sound.setCapability(Sound.ALLOW_ENABLE_READ);
+		
 	}
 	
 	//metodo chamado inicialmente para chamar a condição despertar
@@ -49,7 +65,6 @@ public class KeyControl extends Behavior {
 		
 		//se acontecer algum dos criterios despertar
 		wakeupCondition = new WakeupOr(events);
-		
 		wakeupOn(wakeupCondition);
 		
 		
@@ -74,8 +89,9 @@ public class KeyControl extends Behavior {
 					
 					if(id == KeyEvent.KEY_PRESSED) {
 						
-						keyPressed( (KeyEvent) awtEvents[i]);
-						
+						if(enable) {
+							keyPressed( (KeyEvent) awtEvents[i]);
+						}
 						
 					}else if(id == KeyEvent.KEY_RELEASED) {
 						
@@ -83,9 +99,7 @@ public class KeyControl extends Behavior {
 				}
 			
 			}else if(wakeupCriterion instanceof WakeupOnCollisionEntry){
-				
-				collision = true;
-				
+				collision = true;	
 			}else if(wakeupCriterion instanceof WakeupOnCollisionExit) {
 				collision = false;
 			}
@@ -102,23 +116,33 @@ public class KeyControl extends Behavior {
 		switch (keyCode) {
 		
 		case KeyEvent.VK_LEFT:
-			if(!collision || (collision && lastKey != KeyEvent.VK_LEFT) )
+			if(!collision || (collision && lastKey != KeyEvent.VK_LEFT) ) {
 				doRotationY(Math.toRadians(1.0));		
+			}
 			break;
 			
 		case KeyEvent.VK_RIGHT:
-			if(!collision || (collision && lastKey != KeyEvent.VK_RIGHT))
+			if(!collision || (collision && lastKey != KeyEvent.VK_RIGHT)) {
 				doRotationY(Math.toRadians(-1.0));	
+			}
 			break;
 					
 		case KeyEvent.VK_UP:
-			if(!collision || (collision && lastKey != KeyEvent.VK_UP))
+			if(!collision || (collision && lastKey != KeyEvent.VK_UP)) {
 				doTranslation(new Vector3f(0.01f, 0f, 0f));
+			}
 			break;
 			
 		case KeyEvent.VK_DOWN:
-			if(!collision || (collision && lastKey != KeyEvent.VK_DOWN))
+			if(!collision || (collision && lastKey != KeyEvent.VK_DOWN)) {
 				doTranslation(new Vector3f(-0.01f, 0f, 0f));
+			}
+			break;	
+			
+		case KeyEvent.VK_P:
+			onOff = !onOff;
+			sound.setEnable(onOff);
+			
 			break;
 			
 		}
@@ -127,7 +151,7 @@ public class KeyControl extends Behavior {
 		lastKey = keyCode;
 	}
 	
-	private void doRotationY(double t) {
+	public void doRotationY(double t) {
 		
 		//implementação da rotacao
 		Transform3D newTr = new Transform3D();
@@ -139,6 +163,7 @@ public class KeyControl extends Behavior {
 		oldTr.mul(newTr); //se multiplicar ao contrário não dá a mesma coisa
 		
 		moveTg.setTransform(oldTr);
+		
 
 	}
 
@@ -157,4 +182,10 @@ public class KeyControl extends Behavior {
 		moveTg.setTransform(oldTr);
 
 	}
+	
+	public void changeEnable() {
+		enable = true; 
+	}
+	
+	
 }

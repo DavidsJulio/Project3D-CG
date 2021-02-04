@@ -20,9 +20,9 @@ public class MyMaterial extends Material{
 
 		case GOLD:
 			
-			this.setAmbientColor(0.24725f, 0.1995f, 0.0275f);
-			this.setDiffuseColor(0.751264f, 0.60648f, 0.22648f);
-			this.setSpecularColor(0.628281f, 0.55502f, 0.36605f);
+			this.setAmbientColor(0.24725f, 0.1995f, 0.0745f);
+			this.setDiffuseColor(0.75164f, 0.60648f, 0.22648f);
+			this.setSpecularColor(0.628281f, 0.55502f, 0.366065f);
 			this.setShininess(51.2f);
 			break;
 			
