@@ -1,15 +1,18 @@
 package application;
 
 import java.awt.BorderLayout;
+import java.awt.Button;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Frame;
 import java.awt.GraphicsConfiguration;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
@@ -27,19 +30,27 @@ import javax.media.j3d.Canvas3D;
 import javax.media.j3d.ColoringAttributes;
 import javax.media.j3d.Font3D;
 import javax.media.j3d.FontExtrusion;
+import javax.media.j3d.ImageComponent;
 import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.MediaContainer;
 import javax.media.j3d.PointLight;
+import javax.media.j3d.RotPosPathInterpolator;
 import javax.media.j3d.RotationInterpolator;
+import javax.media.j3d.Screen3D;
 import javax.media.j3d.Shape3D;
 import javax.media.j3d.Sound;
 import javax.media.j3d.Text3D;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
+import javax.media.j3d.View;
+import javax.swing.JFileChooser;
+import javax.swing.JPanel;
 import javax.vecmath.AxisAngle4d;
+import javax.vecmath.AxisAngle4f;
 import javax.vecmath.Color3f;
 import javax.vecmath.Point3d;
 import javax.vecmath.Point3f;
+import javax.vecmath.Quat4f;
 import javax.vecmath.Vector3d;
 import javax.vecmath.Vector3f;
 
@@ -54,11 +65,12 @@ import com.sun.j3d.utils.universe.SimpleUniverse;
 import appearence.MyMaterial;
 import appearence.TextureAppearence;
 import shapes.Arrow;
+import shapes.Table;
 import shapes.ToyTruck;
 
-public class Java3D extends Frame implements MouseListener{
+public class Java3D extends JPanel implements MouseListener{
 	
-	BoundingSphere bounds = new BoundingSphere(new Point3d(0, 0, 0), 4.2f); // Bounds of the scene
+	BoundingSphere bounds = new BoundingSphere(new Point3d(0, 0, 0), 5f); // Bounds of the scene
 	Background background = null;
 	ImageComponent2D image = null;
 	PickCanvas pickCanvas;
@@ -69,30 +81,25 @@ public class Java3D extends Frame implements MouseListener{
 	BranchGroup root = new BranchGroup();
 	String info = "Clique na Carrrinha!";
 	BackgroundSound bSound;
+	BackgroundSound bColision;
 	
-	public static void main(String[] args) {
-		
-		Frame frame = new Java3D();
-		frame.setPreferredSize(new Dimension(700, 700));
-		frame.setTitle("Java3D - Project");
-		frame.pack();
-		frame.setResizable(false);
-		frame.setLocationRelativeTo(null);
-		frame.setVisible(true);
-	}
+	Point3d eye = new Point3d(0.0, 1.0,  6);
+	Point3d center = new Point3d(0, 0, 0);
+	Vector3d up =  new Vector3d(0,1,0);
 	
+	URL url;
+
+	boolean light = true;
+	PointLight ptlight;
 	
-	protected void processWindowEvent(WindowEvent e) {
-		super.processWindowEvent(e);
-		if (e.getID() == WindowEvent.WINDOW_CLOSING) {
-			System.exit(0);
-		}
-	}
-	
+	View view;
+	Canvas3D cv;
+	Canvas3D offScreenCanvas;
+
 	public Java3D() {
 		
 		GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
-		Canvas3D cv = new Canvas3D(gc);
+		cv = new Canvas3D(gc);
 
 		// Add canvas to the frame
 		setLayout(new BorderLayout());
@@ -103,10 +110,13 @@ public class Java3D extends Frame implements MouseListener{
 		
 		//Vista
 		Transform3D viewTr = new Transform3D();
-		viewTr.lookAt(new Point3d(0, 1,  6), new Point3d(0, 0, 0), new Vector3d(0,1,0));
+
+		viewTr.lookAt(eye, center, up);
+
 		viewTr.invert();
 		su.getViewingPlatform().getViewPlatformTransform().setTransform(viewTr);
-		
+	
+	
 		AudioDevice audioDev = new JavaSoundMixer(su.getViewer().getPhysicalEnvironment());
 		audioDev.initialize();
 		
@@ -118,17 +128,71 @@ public class Java3D extends Frame implements MouseListener{
 		pickCanvas = new PickCanvas(cv, bg);
 		pickCanvas.setMode(PickTool.GEOMETRY);
 		
-		
-		
 		//Camara
-		OrbitBehavior orbit = new OrbitBehavior(cv);
+		OrbitBehavior orbit = new OrbitBehavior(cv, OrbitBehavior.REVERSE_ROTATE);
 		orbit.setSchedulingBounds(bounds);
 		su.getViewingPlatform().setViewPlatformBehavior(orbit);
+		
+		
+		
+		// create off screen canvas
+	    view = su.getViewer().getView();
+	    offScreenCanvas = new Canvas3D(gc, true);
+	    Screen3D sOn = cv.getScreen3D();
+	    Screen3D sOff = offScreenCanvas.getScreen3D();
+	    Dimension dim = sOn.getSize();
+	    sOff.setSize(dim);
+	    sOff.setPhysicalScreenWidth(sOn.getPhysicalScreenWidth());
+	    sOff.setPhysicalScreenHeight(sOn.getPhysicalScreenHeight());
+	    Point loc = cv.getLocationOnScreen();
+	    offScreenCanvas.setOffScreenLocation(loc);
+	    // button
+	    
+	    Button button = new Button("Save image");
+	    add(button, BorderLayout.SOUTH);
+	    button.addActionListener(new ActionListener() {
+		      public void actionPerformed(ActionEvent ev) {
+			        BufferedImage bi = capture();
+			        save(bi);
+		      }
+	    });
 	}
 	
+	//OFFSCREEN
+	public BufferedImage capture() {
+	    // render off screen image
+		Dimension dim = cv.getSize();
+	    view.stopView();
+	    view.addCanvas3D(offScreenCanvas);
+	    BufferedImage bImage =
+	    new BufferedImage(dim.width, dim.height, BufferedImage.TYPE_INT_RGB);
+	    ImageComponent2D buffer =
+	    new ImageComponent2D(ImageComponent.FORMAT_RGB, bImage);
+	    offScreenCanvas.setOffScreenBuffer(buffer);
+	    view.startView();
+	    offScreenCanvas.renderOffScreenBuffer();
+	    offScreenCanvas.waitForOffScreenRendering();
+	    bImage = offScreenCanvas.getOffScreenBuffer().getImage();
+	    view.removeCanvas3D(offScreenCanvas);
+	    return bImage;
+	  }
+  
+  public void save(BufferedImage bImage) {
+	// save image to file
+    JFileChooser chooser = new JFileChooser();
+    chooser.setCurrentDirectory(new File("."));
+    if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+      File oFile = chooser.getSelectedFile();
+      try {
+        ImageIO.write(bImage, "jpeg", oFile);
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
+    }
+  }
+
 	private BranchGroup createSceneGraph() {
-	
-//		BranchGroup root = new BranchGroup();
+
 		root.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		root.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		
@@ -144,6 +208,20 @@ public class Java3D extends Frame implements MouseListener{
 		tgFloor.setCollidable(false);
 		tgFloor.addChild(floor);
 		root.addChild(tgFloor);
+		
+		//lightSwitch
+		TextureAppearence lightSwitch = new TextureAppearence("images/wood.jpg", false, this);
+		Box lights = new Box(0.1f, 0.1f, 0.05f, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS, lightSwitch);
+		lights.setName("lights");
+		Transform3D trLight = new Transform3D();
+		trLight.setRotation(new AxisAngle4d(0, -1, 0, Math.toRadians(90)));
+		trLight.setTranslation(new Vector3f(-3.4f, 0.5f, 2.5f));
+		TransformGroup tgLights = new TransformGroup(trLight);
+		tgLights.setCapability(TransformGroup.ENABLE_PICK_REPORTING);
+		tgLights.addChild(lights);
+		root.addChild(tgLights);
+		
+
 		//WALLS
 		walls();
 		
@@ -171,10 +249,12 @@ public class Java3D extends Frame implements MouseListener{
 		moveTG.addChild(truck);
 		tg.addChild(moveTG);
 		root.addChild(tg);
-
+	
+		
 		//SOUND
 		bSound = new BackgroundSound();
-		URL url = this.getClass().getClassLoader().getResource("images/truckReverse.wav");
+		url = this.getClass().getClassLoader().getResource("images/CarHorn.wav");
+
 		MediaContainer mc = new MediaContainer(url);
 		bSound.setSoundData(mc);
 		bSound.setLoop(Sound.INFINITE_LOOPS);
@@ -182,10 +262,22 @@ public class Java3D extends Frame implements MouseListener{
 		bSound.setInitialGain(0.01f);
 		bSound.setEnable(enable);
 		root.addChild(bSound);
+		
+		//Colision
+		bColision = new BackgroundSound();
+		url = this.getClass().getClassLoader().getResource("images/crashSound.wav");
+
+		MediaContainer mc1 = new MediaContainer(url);
+		bColision.setSoundData(mc1);
+		bColision.setLoop(Sound.INFINITE_LOOPS);
+		bColision.setSchedulingBounds(bounds);
+		bColision.setInitialGain(0.01f);
+		bColision.setEnable(enable);
+		root.addChild(bColision);
 
 		
 		//KeyControl
-		control = new KeyControl(moveTG, truck, enable, bSound);
+		control = new KeyControl(moveTG, truck, enable, bSound, bColision);
 		control.setSchedulingBounds(bounds);	
 		root.addChild(control);
 		
@@ -203,7 +295,6 @@ public class Java3D extends Frame implements MouseListener{
 		tr = new Transform3D();
 		tr.setTranslation(new Vector3d(0.0, 1.0, 0.0));
 		tr.setScale(0.25);
-		
 		TransformGroup tgShape = new TransformGroup(tr);
 		
 		tgSpin.addChild(tgShape);
@@ -211,17 +302,20 @@ public class Java3D extends Frame implements MouseListener{
 		
 		Alpha alpha = new Alpha(-1, 2000);
 		RotationInterpolator rotator = new RotationInterpolator(alpha, tgSpin);
-		
 		rotator.setSchedulingBounds(bounds);
 		tgSpin.addChild(rotator);
-		
-		
-		
+
 		//FONT
 		Appearance textApp = new Appearance();
-		textApp.setMaterial(new MyMaterial(MyMaterial.BRASS));
-
+		textApp.setMaterial(new MyMaterial(MyMaterial.GOLD));
 		createFont(root, info, textApp, tgSpin, tr);
+		
+		Transform3D trONOFF = new Transform3D();
+		tr.setTranslation(new Vector3d(-3.4f, 1f, 2.5f));
+		TransformGroup tgONOFF = new TransformGroup(trONOFF);
+		Appearance textLight = new Appearance();
+		textLight.setMaterial(new MyMaterial(MyMaterial.PEWTER));
+		createFont2(root, "On/OFF", textLight, tgONOFF, tr);
 		
 		
 		// LIGHT
@@ -229,17 +323,34 @@ public class Java3D extends Frame implements MouseListener{
 		ablight.setInfluencingBounds(bounds);
 		root.addChild(ablight);
 
-		PointLight ptlight = new PointLight(new Color3f(Color.WHITE), new Point3f(0f, 3f, 3f), new Point3f(1f, 0f, 0f));
+		ptlight = new PointLight(new Color3f(Color.WHITE), new Point3f(0f, 3f, 3f), new Point3f(1f, 0f, 0f));
+		ptlight.setCapability(PointLight.ALLOW_STATE_READ);
+		ptlight.setCapability(PointLight.ALLOW_STATE_WRITE);
+		ptlight.setEnable(light);
 		ptlight.setInfluencingBounds(bounds);
 		root.addChild(ptlight);
 
 		//BACKGROUND
 		setBackground(root);
 		
+		//TABLE
+		Table table = new Table();
+		tr = new Transform3D();
+		tr.setScale(0.5f);
+		tr.setTranslation(new Vector3f(-2f, 0f, -2f));
+		tg = new TransformGroup(tr);
+		tg.setCollidable(true);
+		tg.addChild(table);
+		// root.addChild(tg);
+		root.addChild(tg);
+		
+		
 		return root;
 	}
 	
 						//----------------------------------------------------------AUXILIAR--------------------------------------------//
+	
+	
 	
 	//FONT
 	private void createFont(BranchGroup root, String msg, Appearance app, TransformGroup tgFont, Transform3D trFont) {
@@ -267,9 +378,40 @@ public class Java3D extends Frame implements MouseListener{
 		
 
 		tgFont.addChild(shapeText);
+		tgFont.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		tgFont.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		bbTg.addChild(tgFont);
 	}
 	
+	private void createFont2(BranchGroup root, String msg, Appearance app, TransformGroup tgFont, Transform3D trFont) {
+		
+		Font font = new Font("SansSerif", Font.PLAIN, 1);
+		FontExtrusion extrusion = new FontExtrusion();
+		Font3D font3d = new Font3D(font, extrusion);
+		
+		Text3D text = new Text3D(font3d, msg);	
+		Shape3D shapeText = new Shape3D(text, app);
+			
+		TransformGroup bbTg = new TransformGroup();
+		bbTg.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		root.addChild(bbTg);
+
+		Billboard bb = new Billboard(bbTg, Billboard.ROTATE_ABOUT_POINT, new Point3f(-3.4f, 1f, 2.5f));
+		bb.setSchedulingBounds(bounds);
+		bbTg.addChild(bb);
+
+		trFont = new Transform3D();
+		trFont.setScale(0.3f);
+		trFont.setTranslation(new Vector3d(-3.4f, 1f, 2.5f));
+		
+		tgFont = new TransformGroup(trFont);
+		
+
+		tgFont.addChild(shapeText);
+		tgFont.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		tgFont.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		bbTg.addChild(tgFont);
+	}
 	//Create walls
 	public void walls() {
 		
@@ -327,7 +469,6 @@ public class Java3D extends Frame implements MouseListener{
 		pickCanvas.setShapeLocation(e);
 		PickResult result = pickCanvas.pickClosest(); 
 
-		//TransformGroup nodeTG = (TransformGroup) result.getNode(PickResult.TRANSFORM_GROUP);
 		Box nodeB = (Box) result.getNode(PickResult.GROUP);
 		
 		Shape3D nodeS = (Shape3D) result.getNode(PickResult.SHAPE3D);
@@ -335,6 +476,14 @@ public class Java3D extends Frame implements MouseListener{
 		if(nodeS != null) {
 			if(nodeB.toString().contains("ToyTruck")) {
 				control.changeEnable();
+				
+			}
+		}
+		
+		if(nodeS != null) {
+			if(nodeB.toString().contains("lights")) {
+				light = !light;
+				ptlight.setEnable(light);
 			}
 		}
 		

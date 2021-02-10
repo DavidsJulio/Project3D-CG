@@ -6,6 +6,7 @@ public class MyMaterial extends Material{
 	public final static int BRASS = 0;
 	public final static int GOLD = 1;
 	public final static int CHROME = 2;
+	public final static int PEWTER = 3;
 	
 	
 	public MyMaterial(int type) {
@@ -32,6 +33,13 @@ public class MyMaterial extends Material{
 			this.setSpecularColor(0.774597f, 0.774597f, 0.774597f);
 			this.setShininess(76.8f);
 			break;
+			
+		case PEWTER:
+			this.setAmbientColor(0.105882f, 0.058824f, 0.113725f);
+			this.setDiffuseColor(0.427451f, 0.470588f, 0.541176f);
+			this.setSpecularColor(0.333333f, 0.333333f, 0.521569f);
+			this.setShininess(9.84615f);
+			
 		}
 	}
 

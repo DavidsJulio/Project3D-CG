@@ -38,12 +38,17 @@ public class KeyControl extends Behavior {
 	private boolean enable;
 	private BackgroundSound sound;
 	private boolean onOff = false;
+	private BackgroundSound bColision;
 	
-	public KeyControl(TransformGroup moveTg, Node node, boolean enable, BackgroundSound sound) {
+	public KeyControl(TransformGroup moveTg, Node node, boolean enable, BackgroundSound sound, BackgroundSound bColision) {
 		this.moveTg = moveTg;
 		this.node = node;
 		this.enable = enable;
 		this.sound = sound;
+		this.bColision = bColision;
+		bColision.setCapability(Sound.ALLOW_ENABLE_READ);
+		bColision.setCapability(Sound.ALLOW_ENABLE_WRITE);
+		
 		sound.setCapability(Sound.ALLOW_ENABLE_WRITE);
 		sound.setCapability(Sound.ALLOW_ENABLE_READ);
 		
@@ -100,7 +105,9 @@ public class KeyControl extends Behavior {
 			
 			}else if(wakeupCriterion instanceof WakeupOnCollisionEntry){
 				collision = true;	
+				bColision.setEnable(true);
 			}else if(wakeupCriterion instanceof WakeupOnCollisionExit) {
+				bColision.setEnable(false);
 				collision = false;
 			}
 			
@@ -129,13 +136,13 @@ public class KeyControl extends Behavior {
 					
 		case KeyEvent.VK_UP:
 			if(!collision || (collision && lastKey != KeyEvent.VK_UP)) {
-				doTranslation(new Vector3f(0.01f, 0f, 0f));
+				doTranslation(new Vector3f(0.02f, 0f, 0f));
 			}
 			break;
 			
 		case KeyEvent.VK_DOWN:
 			if(!collision || (collision && lastKey != KeyEvent.VK_DOWN)) {
-				doTranslation(new Vector3f(-0.01f, 0f, 0f));
+				doTranslation(new Vector3f(-0.02f, 0f, 0f));
 			}
 			break;	
 			
